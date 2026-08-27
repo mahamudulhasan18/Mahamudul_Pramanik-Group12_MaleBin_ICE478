@@ -10,6 +10,8 @@ run it on Kaggle. Download these two from the notebook's output and commit them:
 
 ## Reloading the checkpoint
 
+
+
 ```python
 import torch, malebin_common as M
 ck = torch.load("Group00_MaleBin_best.pth", map_location="cpu", weights_only=False)
