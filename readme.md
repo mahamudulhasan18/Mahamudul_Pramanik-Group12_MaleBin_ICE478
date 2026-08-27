@@ -8,7 +8,7 @@
 
 | Name | Student ID | Contribution |
 
-|Mahamudul Hasan Pramanik|2023-1-50-013|100%|
+| Mahamudul Hasan Pramanik | 2023-1-50-013 | 100% |
 
 
 
