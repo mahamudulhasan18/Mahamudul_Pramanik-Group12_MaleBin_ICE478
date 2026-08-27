@@ -1,6 +1,6 @@
 # Task 1 Report — Data Understanding & Related Work
 
-**Group00 · CSE475 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
+**Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
 > Fill every `⟨…⟩` from your Kaggle run of
 > `code/task1/Group00_MaleBin_task1_eda.ipynb`. Every number below is printed by
