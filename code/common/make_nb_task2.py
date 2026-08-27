@@ -8,6 +8,8 @@ C: list[tuple[str, str]] = []
 md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
+
+
 md(f"""\
 # CSE475 Task 2a — Baseline CNNs on MaleBin
 ## {PREFIX} · Track 3 (CNN + Attention)
