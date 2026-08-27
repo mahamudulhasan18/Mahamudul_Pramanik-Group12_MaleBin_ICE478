@@ -1,10 +1,10 @@
-# Group00_MaleBin_CSE475
+# Group12_MaleBin_ICE478
 
-**Course** · CSE475 Machine Learning, Summer 2026 — East West University, Dhaka
+**Course** · ICE478 Machine Learning, Summer 2026 — East West University, Dhaka
 **Instructor** · Raihan Ul Islam
 **Track** · **3 — CNN + Attention** (image classification)
 **Dataset** · MaleBin: Malware Binary Greyscale Images
-**Group** · `Group00` — *replace with your group number and add member names/IDs below*
+**Group** · `Group12` — *replace with your group number and add member names/IDs below*
 
 | Name | Student ID | Contribution |
 
