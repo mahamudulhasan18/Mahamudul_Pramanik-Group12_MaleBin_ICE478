@@ -1,6 +1,8 @@
 """
 nbtool.py -- tiny notebook builder used by the make_notebooks_*.py generators.
 
+
+
 Each task notebook is written as a list of ("md"|"code", source) pairs and
 serialised to .ipynb with nbformat.  Cell 2 of every notebook is an automatic
 `%%writefile malebin_common.py` cell carrying the whole shared module, so each
