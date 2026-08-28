@@ -261,7 +261,9 @@ def main() -> int:
     ap.add_argument("--out-dir", default=str(REPO),
                     help="where figures/ models/ artifacts/ are written")
     ap.add_argument("--workdir", default=str(REPO / "run"))
-    ap.add_argument("--executed", default=str(REPO / "executed_notebooks"))
+    ap.add_argument("--executed", default=str(REPO / "executed_notebooks"),
+                    help="where executed copies are written; kept out of "
+                         "the repository by .gitignore")
     ap.add_argument("--timeout", type=int, default=60 * 90)
     ap.add_argument("--kernel", default="python3")
     ap.add_argument("--list-profiles", action="store_true")

@@ -7,8 +7,9 @@
 > `code/task2/Group12_MaleBin_task2_baselines.ipynb` and
 > `code/task2/Group12_MaleBin_task2_proposed_model.ipynb` against the **real,
 > complete MaleBin dataset — 12,464 images, 39 families**, under the
-> duplicate-grouped split derived in Task 1. Executed notebooks are in
-> `code/executed_notebooks/`; figures are files in `figures/`, not embedded images.
+> duplicate-grouped split derived in Task 1. Both notebooks ran end-to-end with
+> **0 error cells**; their executed copies are kept outside the repository, and
+> figures are files in `figures/`, not embedded images.
 >
 > **Budget caveat (read once, applies to every absolute number below).** This run
 > was produced on a **CPU-only machine**: 64×64 input, and the epoch budgets given

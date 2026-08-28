@@ -44,3 +44,8 @@ artifacts/
 verification_run/
 RESULTS.md
 RESULTS_model_comparison.csv
+
+# Executed notebook copies (the notebooks with their outputs). Produced by
+# code/common/run_notebooks.py; kept out of the repository so code/ holds
+# sources only. Each report states that its notebook ran with 0 error cells.
+executed_notebooks/

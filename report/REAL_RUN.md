@@ -1,8 +1,9 @@
 # `REAL_RUN` — the CPU run on the real MaleBin dataset
 
-This documents the run that produced `figures/`, `artifacts/`, `models/` and
-`executed_notebooks/`. Unlike `verification_run/`, **these numbers come from the
-real 12,464-image MaleBin dataset**, not a synthetic stand-in.
+This documents the run that produced `figures/`, `models/` and the three task
+reports, plus the untracked `artifacts/` folder of metrics and prediction
+arrays. **These numbers come from the real 12,464-image MaleBin dataset**, not a
+synthetic stand-in.
 
 They are still not the numbers the README's method section describes, and the
 difference matters — read §3 before quoting anything.

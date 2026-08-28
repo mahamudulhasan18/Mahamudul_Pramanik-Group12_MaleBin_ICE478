@@ -5,9 +5,9 @@
 > **Provenance of every number below.** All figures and statistics in this report
 > come from one execution of `code/task1/Group12_MaleBin_task1_eda.ipynb` against
 > the **real, complete MaleBin dataset — all 12,464 images, all 39 families**.
-> The executed notebook is `code/executed_notebooks/Group12_MaleBin_task1_eda.ipynb`
-> (0 error cells); its figures are files in `figures/` rather than embedded
-> images. Task 1 performs **no model training**, so nothing in this report is
+> The notebook ran end-to-end with **0 error cells**; its executed copy is
+> kept outside the repository, and its figures are files in `figures/` rather
+> than embedded images. Task 1 performs **no model training**, so nothing in this report is
 > affected by the reduced training budget described in `report/REAL_RUN.md` — these are
 > final numbers, not provisional ones.
 >

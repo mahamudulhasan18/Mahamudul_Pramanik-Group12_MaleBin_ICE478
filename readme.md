@@ -68,7 +68,6 @@ Mahamudul_Pramanik-Group12_MaleBin_ICE478/
 │   │   ├── run_notebooks.py                      execute the chain; figures to disk, not inline
 │   │   └── collect_results.py                    build the results summary from the artifacts
 │   ├── requirements.txt
-│   ├── executed_notebooks/                       ← the five notebooks WITH their results
 │   ├── task1/Group12_MaleBin_task1_eda.ipynb
 │   ├── task2/Group12_MaleBin_task2_baselines.ipynb
 │   ├── task2/Group12_MaleBin_task2_proposed_model.ipynb

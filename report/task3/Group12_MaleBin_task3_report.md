@@ -6,8 +6,9 @@
 > `code/task3/Group12_MaleBin_task3_improvement_ablation.ipynb` and
 > `code/task3/Group12_MaleBin_task3_explainability.ipynb` against the real,
 > complete MaleBin dataset — 12,464 images, 39 families — under the
-> duplicate-grouped split from Task 1. Executed notebooks are in
-> `code/executed_notebooks/` (0 error cells); figures are files in `figures/`.
+> duplicate-grouped split from Task 1. Both notebooks ran end-to-end with **0
+> error cells**; their executed copies are kept outside the repository, and
+> figures are files in `figures/`.
 >
 > **Budget.** CPU-only, 64 px input, 12 epochs per ablation variant and 15 for
 > the final model, with early stopping (patience 5) and **test evaluation at each
