@@ -2,28 +2,6 @@
 
 **Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
-> **Provenance.** Every number comes from executing
-> `code/task3/Group12_MaleBin_task3_improvement_ablation.ipynb` and
-> `code/task3/Group12_MaleBin_task3_explainability.ipynb` against the real,
-> complete MaleBin dataset — 12,464 images, 39 families — under the
-> duplicate-grouped split from Task 1. Both notebooks ran end-to-end with **0
-> error cells**; their executed copies are kept outside the repository, and
-> figures are files in `figures/`.
->
-> **Budget.** CPU-only, 64 px input, 12 epochs per ablation variant and 15 for
-> the final model, with early stopping (patience 5) and **test evaluation at each
-> variant's best validation checkpoint**. This is short of the 224 px / 25-epoch
-> specification; `report/REAL_RUN.md` documents the budget and what it does and does not
-> license. Cross-validation was **not run** — see §4.
-
-
-> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
-> file produced by re-running the notebooks; the folder is **not tracked in git**
-> (see `.gitignore`), because it holds regenerable intermediate data including
-> per-sample prediction arrays. Run the notebooks and the folder appears with
-> exactly these filenames. Figures under `figures/` **are** tracked, as are the
-> executed notebooks, so every number quoted in this report can be checked
-> without re-running anything.
 
 ---
 
