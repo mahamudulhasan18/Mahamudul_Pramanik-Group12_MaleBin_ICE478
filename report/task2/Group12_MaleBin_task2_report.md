@@ -3,29 +3,7 @@
 **Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
 
-> **Provenance.** Every number here comes from executing
-> `code/task2/Group12_MaleBin_task2_baselines.ipynb` and
-> `code/task2/Group12_MaleBin_task2_proposed_model.ipynb` against the **real,
-> complete MaleBin dataset — 12,464 images, 39 families**, under the
-> duplicate-grouped split derived in Task 1. Both notebooks ran end-to-end with
-> **0 error cells**; their executed copies are kept outside the repository, and
-> figures are files in `figures/`, not embedded images.
->
-> **Budget caveat (read once, applies to every absolute number below).** This run
-> was produced on a **CPU-only machine**: 64×64 input, and the epoch budgets given
-> per model in §3 and §7. That is far short of the 224 px / 25-epoch
-> specification. **Relative comparisons under a stated budget are meaningful;
-> absolute values are floored by training time and must not be compared with
-> published figures.** `report/REAL_RUN.md` documents the full budget and its reasoning.
 
-
-> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
-> file produced by re-running the notebooks; the folder is **not tracked in git**
-> (see `.gitignore`), because it holds regenerable intermediate data including
-> per-sample prediction arrays. Run the notebooks and the folder appears with
-> exactly these filenames. Figures under `figures/` **are** tracked, as are the
-> executed notebooks, so every number quoted in this report can be checked
-> without re-running anything.
 
 ---
 
