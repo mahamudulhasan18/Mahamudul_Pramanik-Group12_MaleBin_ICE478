@@ -2,27 +2,6 @@
 
 **Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
-> **Provenance of every number below.** All figures and statistics in this report
-> come from one execution of `code/task1/Group12_MaleBin_task1_eda.ipynb` against
-> the **real, complete MaleBin dataset — all 12,464 images, all 39 families**.
-> The notebook ran end-to-end with **0 error cells**; its executed copy is
-> kept outside the repository, and its figures are files in `figures/` rather
-> than embedded images. Task 1 performs **no model training**, so nothing in this report is
-> affected by the reduced training budget described in `report/REAL_RUN.md` — these are
-> final numbers, not provisional ones.
->
-> Per-image statistics and the duplicate analysis are computed on the images
-> decoded at 128×128 (`EDA_SIDE = 128`); §4.4 records the one place where that
-> resolution choice matters.
-
-
-> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
-> file produced by re-running the notebooks; the folder is **not tracked in git**
-> (see `.gitignore`), because it holds regenerable intermediate data including
-> per-sample prediction arrays. Run the notebooks and the folder appears with
-> exactly these filenames. Figures under `figures/` **are** tracked, as are the
-> executed notebooks, so every number quoted in this report can be checked
-> without re-running anything.
 
 ---
 
