@@ -2,6 +2,7 @@
 
 **Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
+
 > **Provenance.** Every number here comes from executing
 > `code/task2/Group12_MaleBin_task2_baselines.ipynb` and
 > `code/task2/Group12_MaleBin_task2_proposed_model.ipynb` against the **real,
