@@ -1,8 +1,6 @@
 """
 nbtool.py -- tiny notebook builder used by the make_notebooks_*.py generators.
 
-
-
 Each task notebook is written as a list of ("md"|"code", source) pairs and
 serialised to .ipynb with nbformat.  Cell 2 of every notebook is an automatic
 `%%writefile malebin_common.py` cell carrying the whole shared module, so each
@@ -17,9 +15,9 @@ import nbformat as nbf
 
 HERE = Path(__file__).resolve().parent
 COMMON = HERE / "malebin_common.py"
-REPO = HERE.parent.parent            # Group00_MaleBin_CSE475/
+REPO = HERE.parent.parent            # Group12_MaleBin_ICE478/
 
-PREFIX = "Group00_MaleBin"
+PREFIX = "Group12_MaleBin"
 
 
 def writefile_cell() -> tuple[str, str]:
@@ -35,7 +33,7 @@ RUN_NOTE = """\
 >
 > 1. **Add Data** → search `MaleBin malware binary greyscale` → **Add**.
 > 2. **Settings** → *Accelerator*: **GPU P100 / T4**.
-> 3. Set your group number in the boot cell (`CFG.group = "Group00"`).
+> 3. Set your group number in the boot cell (`CFG.group = "Group12"`).
 > 4. **Run All**, then **Save Version → Save & Run All (Commit)**.
 > 5. Download that committed version — it contains every table, figure and
 >    printed number — and push *that* file to the repo.
@@ -62,7 +60,7 @@ import malebin_common as M
 from malebin_common import CFG
 
 # ---- EDIT THESE ------------------------------------------------------------
-CFG.group = "Group00"          # <-- your group number
+CFG.group = "Group12"          # <-- your group number
 CFG.dataset_slug = "MaleBin"
 # CFG.fast = True              # <-- uncomment for a ~3-min wiring check
 # CFG.eval_scope = "malimg25"  # <-- uncomment for the strictly fair comparison
@@ -94,7 +92,7 @@ df = M.tag_malimg_subset(df_all, CFG.eval_scope)
 
 if CFG.max_per_class:                       # smoke-test subsample only
     df = (df.groupby("family", group_keys=False)
-            .apply(lambda g: g.head(CFG.max_per_class))
+            .head(CFG.max_per_class)
             .reset_index(drop=True))
     print(f"[subsampled] {len(df):,} images")
 

@@ -1,10 +1,10 @@
 # Task 3 Report (Final) — Improvement, Comparison & Explainability
 
-**Group00 · CSE475 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
+**Group12 · ICE478 Summer 2026 · Track 3 (CNN + Attention) · Dataset: MaleBin**
 
 > Fill every `⟨…⟩` from your Kaggle runs of
 > `task3_improvement_ablation.ipynb` and `task3_explainability.ipynb`.
-> Export to `report/task3/Group00_MaleBin_task3_report.pdf`.
+> Export to `report/task3/Group12_MaleBin_task3_report.pdf`.
 
 ---
 
@@ -345,8 +345,8 @@ malware, and the uploader's 256×256 resize distorts texture.
 
 | Item | Path |
 |---|---|
-| Final checkpoint | `models/Group00_MaleBin_best.pth` |
-| Label map | `models/Group00_MaleBin_label_map.json` |
+| Final checkpoint | `models/Group12_MaleBin_best.pth` |
+| Label map | `models/Group12_MaleBin_label_map.json` |
 | Ablation table | `task3_ablation_ranked.csv` |
 | CV scores | `task3_cv_scores.csv`, `task3_cv_mean_std.csv` |
 | Significance tests | `task3_significance_tests.json`, `task3_significance_summary.csv` |

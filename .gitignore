@@ -1,7 +1,31 @@
 out/
 __pycache__/
 *.pyc
+.ipynb_checkpoints/
+
+# The notebooks materialise their own copy of the shared module via %%writefile;
+# only the canonical one under code/common/ belongs in the repo.
 malebin_common.py
 !code/common/malebin_common.py
 
-.ipynb_checkpoints/
+# Working directory used by code/common/run_notebooks.py
+run/
+
+# Model checkpoints. Kept out deliberately: the ResNet50 baseline alone is
+# 94.7 MB, at GitHub's 100 MB hard per-file limit, and the four together are
+# ~111 MB. They are reproducible by re-running the notebooks -- see
+# models/README.md. The label map (a few KB) IS tracked, because the reports
+# reference it.
+*.pth
+*.pt
+*.ckpt
+
+# The dataset itself (~580 MB) and any local copy of it
+malebin_data/
+data/
+*.zip
+
+# A stray nested clone of this repository left behind by an earlier session.
+# Git was staging it as a gitlink (mode 160000) -- a submodule with no
+# .gitmodules entry -- which shows up on GitHub as a permanently broken folder.
+Mahamudul_Pramanik-Group12_MaleBin_ICE478/

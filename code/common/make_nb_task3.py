@@ -8,10 +8,8 @@ C: list[tuple[str, str]] = []
 md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
-
-
 md(f"""\
-# CSE475 Task 3a — Improvement, Ablation, Cross-Validation & Significance
+# ICE478 Task 3a — Improvement, Ablation, Cross-Validation & Significance
 ## {PREFIX} · Track 3 (CNN + Attention)
 
 Four things happen here, in this order, because each depends on the last:
@@ -43,11 +41,19 @@ co(BOOT)
 
 co('''\
 # ---- what to run in this session -------------------------------------------
-RUN_ABLATION = True          # section 4  (the expensive one)
-RUN_FINAL    = True          # section 5
-RUN_CV       = True          # section 6  (5 folds x 2 models)
-ABLATION_EPOCHS = max(3, CFG.epochs // 2)   # shorter runs; ranking is what matters
+def _envflag(name, default):
+    v = os.environ.get(name)
+    return default if v in (None, "") else v not in ("0", "false", "False")
+
+RUN_ABLATION = _envflag("MALEBIN_RUN_ABLATION", True)   # section 4 (expensive)
+RUN_FINAL    = _envflag("MALEBIN_RUN_FINAL", True)      # section 5
+RUN_CV       = _envflag("MALEBIN_RUN_CV", True)         # section 6 (folds x 2)
+ABLATION_EPOCHS = int(os.environ.get("MALEBIN_ABLATION_EPOCHS", 0))                   or max(3, CFG.epochs // 2)
+ABLATION_GROUPS = [g.strip() for g in
+                   os.environ.get("MALEBIN_ABLATION_GROUPS", "").split(",")
+                   if g.strip()] or None
 print(f"ablation={RUN_ABLATION}  final={RUN_FINAL}  cv={RUN_CV}")
+print(f"ablation groups : {ABLATION_GROUPS or 'all'}")
 print(f"ablation epochs {ABLATION_EPOCHS} | final epochs {CFG.epochs} "
       f"| folds {CFG.n_folds}")
 ''')
@@ -82,6 +88,9 @@ BASE_TRAIN = dict(aug="byte", optimizer="adamw", scheduler="cosine",
 
 def ablate(name, group, model_kw=None, train_kw=None, note=""):
     """Train one variant. model_kw / train_kw hold ONLY what this variant changes."""
+    if ABLATION_GROUPS is not None and group not in ABLATION_GROUPS:
+        print(f"  {name:<26s} SKIPPED (group {group!r} not in MALEBIN_ABLATION_GROUPS)")
+        return None
     model_kw = dict(model_kw or {})
     train_kw = dict(train_kw or {})
     cfg_m = {**BASE_MODEL, **model_kw}
@@ -418,6 +427,7 @@ mistake the brief warns about.""")
 
 co('''\
 CV_CSV = Path(CFG.art("task3_cv_scores.csv"))
+CV_EPOCHS = int(os.environ.get("MALEBIN_CV_EPOCHS", 0)) or CFG.epochs
 
 def fold_val_split(train_part, frac=0.15):
     """Carve a grouped validation slice out of a fold's training part."""
@@ -439,6 +449,7 @@ def cv_model(make_model, tag, aug="byte", in_ch=1, out_size=None,
         a, b, c = M.make_loaders(imgs, df, sub_tr, sub_va, tst, aug=aug,
                                  in_channels=in_ch, out_size=out_size)
         _, _, s = M.train_model(m, a, b, N_CLASSES, tag=f"{tag}-f{k}",
+                                epochs=CV_EPOCHS,
                                 optimizer=optimizer, scheduler=scheduler, lr=lr,
                                 class_weighted=class_weighted, verbose=False)
         y, p, pr = M.predict(m, c)
@@ -455,20 +466,21 @@ def cv_model(make_model, tag, aug="byte", in_ch=1, out_size=None,
 ''')
 
 co('''\
-if RUN_CV:
-    # the best baseline from Task 2a (falls back to SimpleCNN if 2a was not run)
-    bl_json = Path(CFG.art("task2_baseline_summary.json"))
-    alt = list(Path("/kaggle/input").rglob("*task2_baseline_summary.json")) \\
-          if Path("/kaggle/input").exists() else []
-    if bl_json.exists():
-        BEST_BASELINE = M.load_json(bl_json)["best_baseline"]
-    elif alt:
-        BEST_BASELINE = M.load_json(alt[0])["best_baseline"]
-    else:
-        BEST_BASELINE = "ResNet18" if CFG.fast else "ResNet50"
-        print(f"Task-2a summary not found -> using {BEST_BASELINE} as the baseline")
-    print(f"baseline under test: {BEST_BASELINE}")
+# Resolve the baseline under test unconditionally: section 6.2 (McNemar) needs
+# it even when the cross-validation section is switched off.
+bl_json = Path(CFG.art("task2_baseline_summary.json"))
+alt = list(Path("/kaggle/input").rglob("*task2_baseline_summary.json")) \\
+      if Path("/kaggle/input").exists() else []
+if bl_json.exists():
+    BEST_BASELINE = M.load_json(bl_json)["best_baseline"]
+elif alt:
+    BEST_BASELINE = M.load_json(alt[0])["best_baseline"]
+else:
+    BEST_BASELINE = "ResNet18" if CFG.fast else "ResNet50"
+    print(f"Task-2a summary not found -> using {BEST_BASELINE} as the baseline")
+print(f"baseline under test: {BEST_BASELINE}")
 
+if RUN_CV:
     cv_rows = []
     M.banner(f"CV: ByteAttnNet-FINAL ({CFG.n_folds} grouped stratified folds)")
     cv_rows += cv_model(lambda: M.ByteAttnNet(N_CLASSES, in_ch=1, **final_kw),
@@ -492,65 +504,87 @@ if RUN_CV:
 
     cv = pd.DataFrame(cv_rows)
     cv.to_csv(CV_CSV, index=False)
-else:
+elif CV_CSV.exists():
     cv = pd.read_csv(CV_CSV)
     BEST_BASELINE = [m for m in cv.model.unique() if "ByteAttnNet" not in m][0]
     print("loaded CV scores from disk")
+else:
+    # RUN_CV is off and nothing was left on disk by an earlier session.  This is
+    # a legitimate configuration, not an error: with a small fold count the
+    # Wilcoxon test cannot reach any useful p-value anyway, and the statistical
+    # weight of this notebook sits in the McNemar test of section 6.2, which
+    # runs on the shared held-out test set and does not need folds at all.
+    cv = None
+    print("cross-validation skipped (RUN_CV=0 and no task3_cv_scores.csv on "
+          "disk) -- sections 6 and 6.1 are reported as not run; the McNemar "
+          "test in 6.2 is unaffected and still runs.")
 ''')
 
 co('''\
 # mean +- std across folds -- the format the brief requires
-agg = (cv.groupby("model")[["macro_f1", "accuracy", "weighted_f1",
-                            "macro_recall", "balanced_accuracy"]]
-         .agg(["mean", "std"]).round(4))
-display(agg)
-pretty = pd.DataFrame({
-    m: {c: f"{g[c].mean():.4f} ± {g[c].std(ddof=1):.4f}"
-        for c in ["macro_f1", "accuracy", "weighted_f1", "macro_recall",
-                  "balanced_accuracy"]}
-    for m, g in cv.groupby("model")}).T
-print("\\n5-fold cross-validation, mean ± standard deviation:")
-display(pretty)
-pretty.to_csv(CFG.art("task3_cv_mean_std.csv"))
-agg.to_csv(CFG.art("task3_cv_agg.csv"))
+if cv is None:
+    agg = None
+    pretty = None
+    print("cross-validation was not run in this session -- no mean +- std "
+          "table and no per-fold figure. Section 6.2 (McNemar) is unaffected.")
+else:
+    agg = (cv.groupby("model")[["macro_f1", "accuracy", "weighted_f1",
+                                "macro_recall", "balanced_accuracy"]]
+             .agg(["mean", "std"]).round(4))
+    display(agg)
+    pretty = pd.DataFrame({
+        m: {c: f"{g[c].mean():.4f} +- {g[c].std(ddof=1):.4f}"
+            for c in ["macro_f1", "accuracy", "weighted_f1", "macro_recall",
+                      "balanced_accuracy"]}
+        for m, g in cv.groupby("model")}).T
+    print(f"{CFG.n_folds}-fold cross-validation, mean +- standard deviation:")
+    display(pretty)
+    pretty.to_csv(CFG.art("task3_cv_mean_std.csv"))
+    agg.to_csv(CFG.art("task3_cv_agg.csv"))
 
-fig, ax = plt.subplots(1, 2, figsize=(14, 4.8))
-models = sorted(cv.model.unique())
-data = [cv.loc[cv.model == m, "macro_f1"].values for m in models]
-bp = ax[0].boxplot(data, showmeans=True, widths=.55)
-for i, d in enumerate(data, 1):
-    ax[0].scatter(np.full(len(d), i) + np.random.uniform(-.08, .08, len(d)), d,
-                  zorder=3, s=42, alpha=.85)
-ax[0].set_xticks(range(1, len(models) + 1))
-ax[0].set_xticklabels(models, rotation=15, ha="right", fontsize=9)
-ax[0].set(ylabel="macro-F1 per fold",
-          title=f"{CFG.n_folds}-fold grouped-stratified CV\\n"
-                "dots = individual folds")
-for m in models:
-    g = cv[cv.model == m].sort_values("fold")
-    ax[1].plot(g.fold, g.macro_f1, marker="o", label=m)
-ax[1].set(xlabel="fold", ylabel="macro-F1", xticks=sorted(cv.fold.unique()),
-          title="Per-fold macro-F1 — are the folds themselves consistent?")
-ax[1].legend(fontsize=9)
-fig.tight_layout()
-fig.savefig(CFG.fig("task3_cv.png"), dpi=130, bbox_inches="tight")
-plt.show()
+    fig, ax = plt.subplots(1, 2, figsize=(14, 4.8))
+    models = sorted(cv.model.unique())
+    data = [cv.loc[cv.model == m, "macro_f1"].values for m in models]
+    ax[0].boxplot(data, showmeans=True, widths=.55)
+    for i, d in enumerate(data, 1):
+        ax[0].scatter(np.full(len(d), i) + np.random.uniform(-.08, .08, len(d)),
+                      d, zorder=3, s=42, alpha=.85)
+    ax[0].set_xticks(range(1, len(models) + 1))
+    ax[0].set_xticklabels(models, rotation=15, ha="right", fontsize=9)
+    ax[0].set(ylabel="macro-F1 per fold",
+              title=f"{CFG.n_folds}-fold grouped-stratified CV\\n"
+                    "dots = individual folds")
+    for m in models:
+        g = cv[cv.model == m].sort_values("fold")
+        ax[1].plot(g.fold, g.macro_f1, marker="o", label=m)
+    ax[1].set(xlabel="fold", ylabel="macro-F1",
+              xticks=sorted(cv.fold.unique()),
+              title="Per-fold macro-F1 -- are the folds themselves consistent?")
+    ax[1].legend(fontsize=9)
+    fig.tight_layout()
+    fig.savefig(CFG.fig("task3_cv.png"), dpi=130, bbox_inches="tight")
+    plt.show()
 ''')
 
 md("""### 6.1 Wilcoxon signed-rank across the folds""")
 
 co('''\
-piv = cv.pivot_table(index="fold", columns="model", values="macro_f1")
-piv = piv.sort_index()
-display(piv.round(4))
 stat_results = {}
-stat_results["wilcoxon_vs_best_baseline"] = M.wilcoxon_folds(
-    piv["ByteAttnNet-FINAL"].values, piv[BEST_BASELINE].values,
-    "ByteAttnNet-FINAL", BEST_BASELINE)
-if "ByteAttnNet-no-attn" in piv.columns:
-    stat_results["wilcoxon_vs_no_attention"] = M.wilcoxon_folds(
-        piv["ByteAttnNet-FINAL"].values, piv["ByteAttnNet-no-attn"].values,
-        "ByteAttnNet-FINAL", "ByteAttnNet-no-attn")
+if cv is None:
+    piv = None
+    print("no per-fold scores -> Wilcoxon signed-rank not applicable. "
+          "The paired test that carries this notebook is McNemar (6.2).")
+else:
+    piv = cv.pivot_table(index="fold", columns="model", values="macro_f1")
+    piv = piv.sort_index()
+    display(piv.round(4))
+    stat_results["wilcoxon_vs_best_baseline"] = M.wilcoxon_folds(
+        piv["ByteAttnNet-FINAL"].values, piv[BEST_BASELINE].values,
+        "ByteAttnNet-FINAL", BEST_BASELINE)
+    if "ByteAttnNet-no-attn" in piv.columns:
+        stat_results["wilcoxon_vs_no_attention"] = M.wilcoxon_folds(
+            piv["ByteAttnNet-FINAL"].values, piv["ByteAttnNet-no-attn"].values,
+            "ByteAttnNet-FINAL", "ByteAttnNet-no-attn")
 ''')
 
 md("""### 6.2 McNemar on the shared held-out test set — where the real power is""")
@@ -590,7 +624,9 @@ else:
 md("""### 6.3 Friedman + Nemenyi across all three models""")
 
 co('''\
-if piv.shape[1] >= 3:
+if piv is None:
+    print("no CV table -> Friedman + Nemenyi not applicable in this session")
+elif piv.shape[1] >= 3:
     stat_results["friedman_nemenyi"] = M.friedman_nemenyi(
         piv.values, list(piv.columns))
 else:
@@ -766,13 +802,13 @@ for p in sorted(Path(CFG.out_dir).rglob("*")):
         print(f"  {p.stat().st_size/1024:9.1f} KB  {p.relative_to(CFG.out_dir)}")
 print("""
 Copy into the repo:
-  models/Group00_MaleBin_best.pth
-  models/Group00_MaleBin_label_map.json
-  report/task3/Group00_MaleBin_task3_report.pdf
-Next: Group00_MaleBin_task3_explainability.ipynb
+  models/Group12_MaleBin_best.pth
+  models/Group12_MaleBin_label_map.json
+  report/task3/Group12_MaleBin_task3_report.pdf
+Next: Group12_MaleBin_task3_explainability.ipynb
 """)
 ''')
 
 build(C, REPO / "code" / "task3" / f"{PREFIX}_task3_improvement_ablation.ipynb",
-      "CSE475 Task 3a - ablation, CV, significance")
+      "ICE478 Task 3a - ablation, CV, significance")
 print("task3a done")

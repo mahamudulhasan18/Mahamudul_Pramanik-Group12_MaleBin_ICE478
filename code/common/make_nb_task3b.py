@@ -1,14 +1,12 @@
-"""Generate code/task3/Group00_MaleBin_task3_explainability.ipynb"""
+"""Generate code/task3/Group12_MaleBin_task3_explainability.ipynb"""
 from nbtool import build, writefile_cell, BOOT, LOAD_SPLIT, REPO, PREFIX
 
 C: list[tuple[str, str]] = []
 md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
-
-
 md(f"""\
-# CSE475 Task 3b — Explainability (Grad-CAM + LIME)
+# ICE478 Task 3b — Explainability (Grad-CAM + LIME)
 ## {PREFIX} · Track 3 (CNN + Attention)
 
 ### Read this before the figures — the honest limitation, stated first
@@ -643,5 +641,5 @@ for p in sorted(Path(CFG.out_dir).rglob("*")):
 ''')
 
 build(C, REPO / "code" / "task3" / f"{PREFIX}_task3_explainability.ipynb",
-      "CSE475 Task 3b - explainability")
+      "ICE478 Task 3b - explainability")
 print("task3b done")

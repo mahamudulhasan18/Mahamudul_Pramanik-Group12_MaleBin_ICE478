@@ -1,7 +1,7 @@
 """
 malebin_common.py
 =================
-Shared utilities for the CSE475 (Summer 2026) course project.
+Shared utilities for the ICE478 (Summer 2026) course project.
 
 Track      : 3 -- CNN + Attention
 Dataset    : MaleBin: Malware Binary Greyscale Images
@@ -9,8 +9,6 @@ Dataset    : MaleBin: Malware Binary Greyscale Images
              12,464 grayscale byte-plot images, 39 malware families, 256x256,
              compiled from (a) Malimg (Nataraj et al., 2011) and
                            (b) a MalwareBazaar-derived subset (kaggle: walt30).
-
-
 
 This single module is embedded (via %%writefile) at the top of every task
 notebook so that each notebook is self-contained and re-runnable on Kaggle
@@ -63,6 +61,8 @@ __all__ = [
     "plot_confusion", "plot_roc_ovr", "plot_pr_ovr", "plot_history",
     "mcnemar_test", "wilcoxon_folds", "friedman_nemenyi",
     "save_json", "load_json", "banner", "RELATED_WORK",
+    "CROSS_FAMILY_GROUPS",
+    "SAVED_FIGURES", "_install_headless_hooks",
 ]
 
 # =============================================================================
@@ -76,7 +76,7 @@ def on_kaggle() -> bool:
 @dataclass
 class Config:
     # ---- identity (EDIT THESE TWO for your group) -------------------------
-    group: str = "Group00"
+    group: str = "Group12"
     dataset_slug: str = "MaleBin"
 
     # ---- paths ------------------------------------------------------------
@@ -126,6 +126,31 @@ class Config:
             self.batch_size = 32
             self.patience = 2
             self.num_workers = 0
+            self.amp = False
+        # Environment overrides.  These let a driver script re-budget a run
+        # (e.g. for a CPU-only box) without editing a single notebook cell;
+        # unset variables leave the defaults above untouched, so the notebooks
+        # behave exactly as before on Kaggle.
+        for var, attr, cast in (
+            ("MALEBIN_IMG_SIZE",   "img_size",   int),
+            ("MALEBIN_CACHE_SIZE", "cache_size", int),
+            ("MALEBIN_EPOCHS",     "epochs",     int),
+            ("MALEBIN_FOLDS",      "n_folds",    int),
+            ("MALEBIN_BATCH",      "batch_size", int),
+            ("MALEBIN_PATIENCE",   "patience",   int),
+            ("MALEBIN_WORKERS",    "num_workers", int),
+            ("MALEBIN_LR",         "lr",         float),
+            ("MALEBIN_OUT_DIR",    "out_dir",    str),
+            ("MALEBIN_EVAL_SCOPE", "eval_scope", str),
+            ("MALEBIN_MAX_PER_CLASS", "max_per_class", int),
+        ):
+            raw = os.environ.get(var)
+            if raw not in (None, ""):
+                try:
+                    setattr(self, attr, cast(raw))
+                except ValueError:
+                    print(f"[CFG] ignoring {var}={raw!r} (not a valid {cast.__name__})")
+        if os.environ.get("MALEBIN_AMP") in ("0", "false", "False"):
             self.amp = False
         Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         for sub in ("models", "figures", "artifacts"):
@@ -390,19 +415,23 @@ def load_images(df: pd.DataFrame, side: int | None = None,
     t0 = time.time()
 
     if workers is None:
-        workers = 0 if (CFG.fast or n < 400) else min(4, (os.cpu_count() or 2))
+        workers = 0 if (CFG.fast or n < 400) else min(8, (os.cpu_count() or 2))
 
+    # Threads, not processes.  PIL's decode/resize release the GIL, so a thread
+    # pool gets most of the speed-up -- and unlike ProcessPoolExecutor it works
+    # inside a Jupyter kernel and on Windows "spawn", where re-importing
+    # __main__ either fails or forks the caller recursively.
     done = False
     if workers and workers > 1:
-        from concurrent.futures import ProcessPoolExecutor
+        from concurrent.futures import ThreadPoolExecutor
         try:
-            with ProcessPoolExecutor(max_workers=workers) as ex:
+            with ThreadPoolExecutor(max_workers=workers) as ex:
                 for i, arr in enumerate(ex.map(_load_one,
                                                ((p, side) for p in paths),
                                                chunksize=64)):
                     out[i] = arr
             done = True
-        except Exception as e:                     # sandboxes without fork/spawn
+        except Exception as e:                     # pathological sandboxes
             print(f"  [load_images] parallel decode failed ({e!r}); serial fallback")
     if not done:
         try:
@@ -461,6 +490,11 @@ def _dhash128(imgs: np.ndarray) -> np.ndarray:
     hbits = (small[:, :8, :8] > small[:, :8, 1:9]).reshape(n, 64)
     vbits = (small[:, :8, :8] > small[:, 1:9, :8]).reshape(n, 64)
     return np.packbits(np.concatenate([hbits, vbits], axis=1), axis=1)   # (n,16)
+
+
+# Filled in by build_dedup_groups(): duplicate groups whose images carry more
+# than one family label, i.e. a labelling defect found in the data itself.
+CROSS_FAMILY_GROUPS: list[dict] = []
 
 
 def build_dedup_groups(imgs: np.ndarray, df: pd.DataFrame,
@@ -529,8 +563,39 @@ def build_dedup_groups(imgs: np.ndarray, df: pd.DataFrame,
     _, groups = np.unique(raw, return_inverse=True)          # relabel 0..G-1
 
     gf = pd.DataFrame({"g": groups, "f": df["family"].to_numpy()})
-    cross = int((gf.groupby("g")["f"].nunique() > 1).sum())
-    assert cross == 0, f"{cross} duplicate group(s) span more than one family"
+    spanning = gf.groupby("g")["f"].nunique() > 1
+    cross = int(spanning.sum())
+
+    # A group that spans two families is NOT a bug in the grouping -- it is a
+    # labelling defect in the dataset, and the grouping is the thing that makes
+    # it harmless.  Near-duplicate search is per-family, so the only way to get
+    # here is an *exact* pixel match carrying two different labels: the same
+    # image filed under two family folders.  Unioning them is exactly right --
+    # if one copy trained and its twin were tested, the model would be scored on
+    # pixels it had memorised, which is the failure mode this whole section
+    # exists to prevent.  So we record it and report it loudly instead of
+    # aborting the run.  (MaleBin v1 really does contain such a pair; see the
+    # `cross_family_groups` attribute and Task-1 section F.)
+    CROSS_FAMILY_GROUPS.clear()
+    if cross:
+        bad = spanning[spanning].index.to_numpy()
+        fam = df["family"].to_numpy()
+        for g in bad:
+            members = np.flatnonzero(groups == g)
+            CROSS_FAMILY_GROUPS.append(
+                {"group": int(g), "n_images": int(len(members)),
+                 "families": sorted(set(fam[members].tolist()))})
+        pairs = pd.Series(
+            [" + ".join(d["families"]) for d in CROSS_FAMILY_GROUPS]
+        ).value_counts()
+        print(f"  [!] {cross:,} duplicate group(s) span more than one family -- "
+              f"these are byte-identical images filed under two labels.")
+        for label, k in pairs.items():
+            print(f"      {label}: {k:,} group(s)")
+        print("      They are kept in ONE group, so no split can put an image "
+              "in train and its identical twin in test.")
+        print("      NOTE: two families that share images are not separable by "
+              "any classifier; this caps the achievable macro-F1.")
 
     if verbose:
         sizes = pd.Series(groups).value_counts()
@@ -541,7 +606,7 @@ def build_dedup_groups(imgs: np.ndarray, df: pd.DataFrame,
         print(f"  duplicate groups          : {n_groups:,} for {n:,} images "
               f"({100*(1-n_groups/n):.1f}% collapse)")
         print(f"  largest group             : {sizes.max()} images")
-        print(f"  groups spanning >1 family : {cross}   (must be 0)")
+        print(f"  groups spanning >1 family : {cross}   (dataset labelling defect)")
     return groups
 
 
@@ -1420,6 +1485,105 @@ def _plt():
         matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     return plt
+
+
+# ---------------------------------------------------------------------------
+# Headless figure mode  --  MALEBIN_NO_INLINE=1
+# ---------------------------------------------------------------------------
+# Every figure in these notebooks is already written to figures/ with a
+# meaningful name immediately before its plt.show().  With this mode on,
+# plt.show() stops *embedding* the rendered PNG in the notebook and instead
+# prints the path it was written to, then closes the figure.  The executed
+# .ipynb therefore keeps all of its text, tables and numbers but carries no
+# megabytes of base64 image data.  Unset the variable and the notebooks show
+# their plots inline exactly as before (which is what you want on Kaggle).
+
+SAVED_FIGURES: list[str] = []
+_FIG_AUTO_SEQ = [0]
+
+
+def _install_headless_hooks() -> None:
+    import matplotlib
+    matplotlib.use("Agg", force=True)
+    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure
+
+    if getattr(plt, "_malebin_headless", False):
+        return
+
+    # Record the destination of every savefig, so show() can report the real
+    # filename the notebook chose rather than inventing one.
+    _orig_savefig = Figure.savefig
+
+    def _savefig(self, fname, *a, **k):
+        r = _orig_savefig(self, fname, *a, **k)
+        try:
+            self._malebin_saved = str(fname)
+        except Exception:
+            pass
+        return r
+
+    Figure.savefig = _savefig
+
+    def _show(*a, **k):
+        for num in plt.get_fignums():
+            fig = plt.figure(num)
+            path = getattr(fig, "_malebin_saved", None)
+            if path is None:                     # a figure nobody saved
+                _FIG_AUTO_SEQ[0] += 1
+                path = str(CFG.fig(f"auto_{_FIG_AUTO_SEQ[0]:03d}.png"))
+                _orig_savefig(fig, path, dpi=130, bbox_inches="tight")
+            SAVED_FIGURES.append(path)
+            print(f"  [figure] {Path(path).name}")
+            plt.close(fig)
+
+    plt.show = _show
+    plt._malebin_headless = True
+
+    # Plotly.  Every interactive figure in these notebooks is already written
+    # with write_html() under its own name, so .show() only needs to stop
+    # injecting the ~3 MB plotly.js bundle into the notebook.  Track what
+    # write_html produced so show() can name the right file rather than dumping
+    # a second copy of the same figure.
+    try:
+        import plotly.graph_objects as go
+
+        _orig_write_html = go.Figure.write_html
+
+        def _write_html(self, *a, **k):
+            r = _orig_write_html(self, *a, **k)
+            if a:
+                try:
+                    self._malebin_saved = str(a[0])
+                    SAVED_FIGURES.append(str(a[0]))
+                except Exception:
+                    pass
+            return r
+
+        def _pshow(self, *a, **k):
+            path = getattr(self, "_malebin_saved", None)
+            if path is None:                     # nobody wrote this one
+                _FIG_AUTO_SEQ[0] += 1
+                path = str(CFG.fig(f"interactive_{_FIG_AUTO_SEQ[0]:03d}.html"))
+                try:
+                    _orig_write_html(self, path, include_plotlyjs="cdn")
+                except Exception as e:
+                    print(f"  [figure] plotly write_html failed: {e!r}")
+                    return
+                SAVED_FIGURES.append(path)
+            print(f"  [figure] {Path(path).name}")
+
+        go.Figure.write_html = _write_html
+        go.Figure.show = _pshow
+    except Exception:
+        pass
+
+    print("[malebin] headless figure mode ON -- plots go to "
+          f"{CFG.path('figures')}, not into this notebook")
+
+
+if os.environ.get("MALEBIN_NO_INLINE") in ("1", "true", "True"):
+    _install_headless_hooks()
 
 
 def plot_history(hist_df, title="Training curves", save=None):

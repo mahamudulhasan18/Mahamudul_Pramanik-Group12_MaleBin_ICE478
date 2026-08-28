@@ -1,4 +1,4 @@
-"""Generate code/task1/Group00_MaleBin_task1_eda.ipynb"""
+"""Generate code/task1/Group12_MaleBin_task1_eda.ipynb"""
 from pathlib import Path
 from nbtool import build, writefile_cell, BOOT, REPO, PREFIX
 
@@ -6,10 +6,8 @@ C: list[tuple[str, str]] = []
 md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
-
-
 md(f"""\
-# CSE475 Summer 2026 — Task 1: Data Understanding & Related Work
+# ICE478 Summer 2026 — Task 1: Data Understanding & Related Work
 ## {PREFIX} · Track 3 (CNN + Attention) · Dataset: **MaleBin**
 
 **Dataset** · *MaleBin: Malware Binary Greyscale Images* — Kaggle
@@ -342,6 +340,22 @@ print("cache:", imgs_eda.shape, imgs_eda.dtype)
 ''')
 
 co('''\
+def _safe_corr(u, v) -> float:
+    """
+    Pearson r that degrades to 0.0 instead of NaN.
+
+    rows.std() > 0 is NOT enough to make corrcoef safe: a byte-plot whose rows
+    are constant except for the very first or very last one leaves one of the
+    two shifted halves with zero variance, and corrcoef then returns NaN.  Four
+    real MaleBin images do exactly that, and a single NaN here propagates into
+    StandardScaler -> PCA / t-SNE / UMAP / kNN and takes section G down with it.
+    """
+    if u.std() == 0 or v.std() == 0:
+        return 0.0
+    r = float(np.corrcoef(u, v)[0, 1])
+    return 0.0 if not np.isfinite(r) else r
+
+
 def image_features(a: np.ndarray) -> dict:
     """Interpretable per-image descriptors (byte-statistics + texture)."""
     x = a.astype(np.float32)
@@ -364,7 +378,7 @@ def image_features(a: np.ndarray) -> dict:
         ascii_frac=float(((a >= 32) & (a <= 126)).mean()),         # printable strings
         grad_mag=float(np.hypot(gx, gy).mean()),                  # texture roughness
         row_var=float(rows.var()),                                # banding strength
-        row_autocorr=float(np.corrcoef(rows[:-1], rows[1:])[0, 1]) if rows.std() > 0 else 0.0,
+        row_autocorr=_safe_corr(rows[:-1], rows[1:]),
         col_var=float(x.mean(axis=0).var()),
         top_band_mean=float(x[: x.shape[0] // 8].mean()),          # PE header region
         bottom_band_mean=float(x[-x.shape[0] // 8:].mean()),       # tail / padding
@@ -372,6 +386,22 @@ def image_features(a: np.ndarray) -> dict:
 
 t0 = time.time()
 feat = pd.DataFrame([image_features(imgs_eda[i]) for i in range(len(df))])
+
+# scipy returns NaN for skew/kurtosis of a constant image, and +-inf can appear
+# in a ratio feature.  Anything non-finite that survives is repaired with the
+# column median and reported -- silently shipping it would only surface later
+# as an opaque "Input X contains NaN" from whichever estimator hits it first.
+_bad = (~np.isfinite(feat.select_dtypes("number"))).sum()
+_bad = _bad[_bad > 0]
+if len(_bad):
+    print("[!] non-finite feature values repaired with the column median:")
+    for _c, _n in _bad.items():
+        print(f"      {_c}: {_n}")
+    _num = feat.select_dtypes("number").columns
+    feat[_num] = (feat[_num].replace([np.inf, -np.inf], np.nan)
+                            .fillna(feat[_num].median(numeric_only=True)))
+else:
+    print("all per-image features are finite")
 feat.insert(0, "family", df.family.values)
 feat.insert(1, "label", df.label.values)
 feat.insert(2, "is_malimg", df.is_malimg.values)
@@ -531,6 +561,66 @@ fig.savefig(CFG.fig("task1_F_duplicates.png"), dpi=130, bbox_inches="tight")
 plt.show()
 display(per_fam)
 per_fam.to_csv(CFG.art("task1_F_redundancy_per_family.csv"))
+''')
+
+md("""\
+#### F.5 · Families that share images — a labelling defect in the dataset
+
+Near-duplicate search is run *within* a family, so the only way a duplicate
+group can carry two different family labels is an **exact pixel match filed
+under two folders**. If that happens it is not a bug in the grouping — it is a
+defect in the labels, and the grouping is what stops it becoming leakage.
+
+It matters for what any model here can possibly score: if two families share
+their images, **no classifier can separate them**, so their share of macro-F1
+is unreachable by construction. We report it rather than quietly dropping a
+class.""")
+
+co('''\
+# ---- 5. do any duplicate groups span two families? -------------------------
+M.banner("F.5 Cross-family exact duplicates (labelling defect check)")
+xf = M.CROSS_FAMILY_GROUPS
+if not xf:
+    print("No duplicate group spans more than one family -- labels are clean "
+          "in this respect.")
+else:
+    xf_df = pd.DataFrame([{"group": d["group"], "n_images": d["n_images"],
+                           "families": " + ".join(d["families"])} for d in xf])
+    n_imgs = int(xf_df.n_images.sum())
+    print(f"{len(xf_df):,} duplicate group(s), {n_imgs:,} images, carry more "
+          f"than one family label.")
+    display(xf_df.families.value_counts().rename("groups").to_frame())
+    xf_df.to_csv(CFG.art("task1_F_cross_family_groups.csv"), index=False)
+
+    affected = sorted({f for d in xf for f in d["families"]})
+    print("Affected families:", ", ".join(affected))
+    display(df[df.family.isin(affected)].family.value_counts()
+              .rename("images").to_frame())
+
+    pair = xf[0]["families"]
+    ia = int(np.flatnonzero(df.family.values == pair[0])[0])
+    ib = int(np.flatnonzero(df.family.values == pair[1])[0])
+    fig, axes = plt.subplots(1, 3, figsize=(9.5, 3.4))
+    axes[0].imshow(imgs_eda[ia], cmap="gray", vmin=0, vmax=255)
+    axes[0].set_title(pair[0], fontsize=9)
+    axes[1].imshow(imgs_eda[ib], cmap="gray", vmin=0, vmax=255)
+    axes[1].set_title(pair[1], fontsize=9)
+    dd = np.abs(imgs_eda[ia].astype(int) - imgs_eda[ib].astype(int))
+    axes[2].imshow(dd, cmap="magma", vmin=0, vmax=max(1, int(dd.max())))
+    axes[2].set_title(f"absolute difference, max = {int(dd.max())}", fontsize=9)
+    for a in axes:
+        a.axis("off")
+    fig.suptitle("F.5 - the same image filed under two family labels", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(CFG.fig("task1_F_cross_family_pair.png"), dpi=130,
+                bbox_inches="tight")
+    plt.show()
+
+    n_fam = int(df.family.nunique())
+    print(f"Ceiling effect: {len(affected)} of {n_fam} families are involved. "
+          f"Two families that share their images cannot both be recalled, so "
+          f"about {1/n_fam:.3f} of macro-F1 -- one class worth -- is "
+          f"unreachable no matter how good the model is.")
 ''')
 
 co('''\
@@ -914,12 +1004,12 @@ for p in sorted(Path(CFG.out_dir).rglob("*")):
         print(f"  {p.stat().st_size/1024:8.1f} KB  {p.relative_to(CFG.out_dir)}")
 print("""
 Copy into the repo as:
-  report/task1/Group00_MaleBin_task1_report.pdf     (write from the readings above)
+  report/task1/Group12_MaleBin_task1_report.pdf     (write from the readings above)
   related_work/Group00_MaleBin_related_work_table.pdf
   related_work/papers/                              (the 7 paper PDFs)
-  code/task1/Group00_MaleBin_task1_eda.ipynb        (this notebook, with output)
+  code/task1/Group12_MaleBin_task1_eda.ipynb        (this notebook, with output)
 """)
 ''')
 
 build(C, REPO / "code" / "task1" / f"{PREFIX}_task1_eda.ipynb",
-      "CSE475 Task 1 - MaleBin EDA + Related Work")
+      "ICE478 Task 1 - MaleBin EDA + Related Work")

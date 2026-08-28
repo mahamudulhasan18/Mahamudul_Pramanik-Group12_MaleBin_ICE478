@@ -8,10 +8,8 @@ C: list[tuple[str, str]] = []
 md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
-
-
 md(f"""\
-# CSE475 Task 2a — Baseline CNNs on MaleBin
+# ICE478 Task 2a — Baseline CNNs on MaleBin
 ## {PREFIX} · Track 3 (CNN + Attention)
 
 **Goal.** Establish an honest, leakage-free performance floor with four standard
@@ -60,6 +58,9 @@ co('''\
 BASELINES = ["SimpleCNN", "ResNet50", "DenseNet121", "EfficientNet-B0"]
 if CFG.fast:
     BASELINES = ["SimpleCNN", "ResNet18"]      # cheap stand-ins for the smoke run
+if os.environ.get("MALEBIN_BASELINES"):        # re-budget without editing cells
+    BASELINES = [b.strip() for b in os.environ["MALEBIN_BASELINES"].split(",")
+                 if b.strip()]
 print("baselines:", BASELINES)
 print("epochs   :", CFG.epochs, "| img_size:", CFG.img_size,
       "| batch:", CFG.batch_size)
@@ -348,11 +349,11 @@ co('''\
 print("Task 2a artefacts:")
 for p in sorted(__import__("pathlib").Path(CFG.out_dir).rglob("*task2*")):
     print(f"  {p.stat().st_size/1024:9.1f} KB  {p.name}")
-print("\\nNext: Group00_MaleBin_task2_proposed_model.ipynb")
+print("\\nNext: Group12_MaleBin_task2_proposed_model.ipynb")
 ''')
 
 build(C, REPO / "code" / "task2" / f"{PREFIX}_task2_baselines.ipynb",
-      "CSE475 Task 2a - MaleBin baselines")
+      "ICE478 Task 2a - MaleBin baselines")
 
 
 # =============================================================================
@@ -363,7 +364,7 @@ md = lambda s: C.append(("md", s))
 co = lambda s: C.append(("code", s))
 
 md(f"""\
-# CSE475 Task 2b — Proposed Model: **ByteAttnNet**
+# ICE478 Task 2b — Proposed Model: **ByteAttnNet**
 ## {PREFIX} · Track 3 (CNN + Attention)
 
 A from-scratch CNN with a two-part attention stack, designed around one
@@ -814,8 +815,8 @@ print("Task 2b artefacts:")
 for p in sorted(Path(CFG.out_dir).rglob("*")):
     if p.is_file() and "task2" in p.name:
         print(f"  {p.stat().st_size/1024:9.1f} KB  {p.name}")
-print("\\nNext: Group00_MaleBin_task3_improvement_ablation.ipynb")
+print("\\nNext: Group12_MaleBin_task3_improvement_ablation.ipynb")
 ''')
 
 build(C, REPO / "code" / "task2" / f"{PREFIX}_task2_proposed_model.ipynb",
-      "CSE475 Task 2b - ByteAttnNet proposed model")
+      "ICE478 Task 2b - ByteAttnNet proposed model")
