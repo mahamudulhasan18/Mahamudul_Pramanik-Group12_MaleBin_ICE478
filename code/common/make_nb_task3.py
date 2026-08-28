@@ -680,8 +680,12 @@ target = M.best_comparable_target(CFG.eval_scope)
 final_f1 = float(mm_final["f1_macro"]) * 100
 final_acc = float(mm_final["accuracy"]) * 100
 final_wf1 = float(mm_final["f1_weighted"]) * 100
-cv_mean = float(cv.loc[cv.model == "ByteAttnNet-FINAL", "macro_f1"].mean()) * 100
-cv_std = float(cv.loc[cv.model == "ByteAttnNet-FINAL", "macro_f1"].std(ddof=1)) * 100
+if cv is None:
+    cv_mean = cv_std = float("nan")
+else:
+    sel = cv.loc[cv.model == "ByteAttnNet-FINAL", "macro_f1"]
+    cv_mean = float(sel.mean()) * 100
+    cv_std = float(sel.std(ddof=1)) * 100
 
 M.banner(f"PILLAR A — scope '{CFG.eval_scope}'")
 print(f"target paper   : {target['paper']}")
@@ -690,7 +694,10 @@ print(f"their metric   : {target['metric']} = {target['value']:.2f}")
 print(f"caveat         : {target['caveat']}")
 print()
 print(f"our macro-F1 (held-out test) : {final_f1:.2f}")
-print(f"our macro-F1 (5-fold CV)     : {cv_mean:.2f} +- {cv_std:.2f}")
+if cv is None:
+    print("our macro-F1 (CV)            : not run in this session")
+else:
+    print(f"our macro-F1 ({CFG.n_folds}-fold CV)     : {cv_mean:.2f} +- {cv_std:.2f}")
 print(f"our weighted-F1              : {final_wf1:.2f}")
 print(f"our accuracy                 : {final_acc:.2f}")
 

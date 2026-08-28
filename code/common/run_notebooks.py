@@ -110,6 +110,29 @@ PROFILES: dict[str, dict[str, str]] = {
         "MALEBIN_RUN_CV": "0",
         "MALEBIN_FOLDS": "2",
     },
+    # Third pass.  The 4-epoch attention ablation ranked the proposed stack
+    # LAST (cbam+coord 0.3355) and plain SE first (0.4950), while attn=coord had
+    # the best *validation* score of the six -- a spread that looks like early
+    # training dynamics rather than a settled ordering.  Task 2b had already
+    # shown this architecture needs ~10 epochs before it separates from noise.
+    # So: 12 epochs per variant, patience 5, and test evaluation at each
+    # variant's best checkpoint (train_model already restores best_state).
+    # The 4-epoch table is kept as task3_ablation_4epoch.csv for the appendix.
+    "ablation12": {
+        "MALEBIN_IMG_SIZE": "64",
+        "MALEBIN_CACHE_SIZE": "96",
+        "MALEBIN_EPOCHS": "15",                 # final model, matches Task 2b
+        "MALEBIN_BATCH": "64",
+        "MALEBIN_PATIENCE": "5",
+        "MALEBIN_WORKERS": "0",
+        "MALEBIN_AMP": "0",
+        "MALEBIN_ABLATION_EPOCHS": "12",
+        "MALEBIN_ABLATION_GROUPS": "attention",
+        "MALEBIN_RUN_ABLATION": "1",
+        "MALEBIN_RUN_FINAL": "1",
+        "MALEBIN_RUN_CV": "0",
+        "MALEBIN_FOLDS": "2",
+    },
     "full": {                                   # the README spec; GPU territory
         "MALEBIN_IMG_SIZE": "224",
         "MALEBIN_CACHE_SIZE": "256",
