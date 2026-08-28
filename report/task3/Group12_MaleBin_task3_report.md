@@ -7,12 +7,12 @@
 > `code/task3/Group12_MaleBin_task3_explainability.ipynb` against the real,
 > complete MaleBin dataset — 12,464 images, 39 families — under the
 > duplicate-grouped split from Task 1. Executed notebooks are in
-> `executed_notebooks/` (0 error cells); figures are files in `figures/`.
+> `code/executed_notebooks/` (0 error cells); figures are files in `figures/`.
 >
 > **Budget.** CPU-only, 64 px input, 12 epochs per ablation variant and 15 for
 > the final model, with early stopping (patience 5) and **test evaluation at each
 > variant's best validation checkpoint**. This is short of the 224 px / 25-epoch
-> specification; `REAL_RUN.md` documents the budget and what it does and does not
+> specification; `report/REAL_RUN.md` documents the budget and what it does and does not
 > license. Cross-validation was **not run** — see §4.
 
 
@@ -125,9 +125,9 @@ more.
 
 This is a real gap in the evidence and we state it plainly: **claims 3 and 4 of
 Task 2 §6 — that multi-scale beats single-scale, and that byte-aware augmentation
-beats the natural-image recipe — remain untested on real data.** The synthetic
-`verification_run/` measured a 0.21 macro-F1 penalty for flip/rotate
-augmentation, but those numbers come from fake images and cannot be quoted.
+beats the natural-image recipe — remain untested on real data.** An earlier run against a synthetic stand-in dataset measured a
+0.21 macro-F1 penalty for flip/rotate augmentation, but those numbers come
+from fake images and cannot be quoted.
 
 ### 2.3 The final configuration
 

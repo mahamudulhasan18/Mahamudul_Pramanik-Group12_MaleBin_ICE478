@@ -1,0 +1,19 @@
+# Every package below is pre-installed on the Kaggle Python image; this file is
+# only needed to run the notebooks locally.
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3          # StratifiedGroupKFold
+matplotlib>=3.7
+seaborn>=0.12
+pillow>=9.5
+tqdm>=4.65
+plotly>=5.14               # task 1, section H (interactive plots)
+scikit-image>=0.21         # LIME segmentation boundaries
+umap-learn>=0.5            # task 1, section G (optional; PCA + t-SNE used if absent)
+lime>=0.2.0.1              # task 3b
+torch>=2.0
+torchvision>=0.15
+
+notebook>=7.0
+ipykernel>=6.25

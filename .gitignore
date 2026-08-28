@@ -35,3 +35,12 @@ Mahamudul_Pramanik-Group12_MaleBin_ICE478/
 # holds only sources, reports, figures and executed notebooks. The reports say
 # so explicitly where they cite an artifacts/ path.
 artifacts/
+
+# Kept locally, deliberately out of the repository so the top level holds only
+# code/, figures/, models/, related_work/, report/, README and .gitignore.
+# verification_run/ was the synthetic stand-in proof run, superseded by the real
+# run; RESULTS*.{md,csv} are generated summaries whose content lives in the
+# reports.
+verification_run/
+RESULTS.md
+RESULTS_model_comparison.csv

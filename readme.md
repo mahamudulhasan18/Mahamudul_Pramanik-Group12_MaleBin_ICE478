@@ -10,8 +10,6 @@
 
 | Mahamudul Hasan Pramanik | 2023-1-50-013 | 100% |
 
-
-
 ---
 
 ## 1. The project in one paragraph
@@ -59,32 +57,41 @@ here, and we repeat them in all three task reports:
 ## 3. Repository layout
 
 ```
-Group00_MaleBin_CSE475/
+Mahamudul_Pramanik-Group12_MaleBin_ICE478/
 ├── README.md
-├── requirements.txt
+├── .gitignore
 ├── code/
-│   ├── common/                                     ← generators + shared module
-│   │   ├── malebin_common.py                       the shared library (single source of truth)
-│   │   ├── nbtool.py                               notebook builder
-│   │   └── make_nb_task*.py                        regenerate the notebooks
-│   ├── task1/Group00_MaleBin_task1_eda.ipynb
-│   ├── task2/Group00_MaleBin_task2_baselines.ipynb
-│   ├── task2/Group00_MaleBin_task2_proposed_model.ipynb
-│   ├── task3/Group00_MaleBin_task3_improvement_ablation.ipynb
-│   └── task3/Group00_MaleBin_task3_explainability.ipynb
+│   ├── common/                                   ← generators + shared module
+│   │   ├── malebin_common.py                     the shared library (single source of truth)
+│   │   ├── nbtool.py                             notebook builder
+│   │   ├── make_nb_task*.py                      regenerate the notebooks
+│   │   ├── run_notebooks.py                      execute the chain; figures to disk, not inline
+│   │   └── collect_results.py                    build the results summary from the artifacts
+│   ├── requirements.txt
+│   ├── executed_notebooks/                       ← the five notebooks WITH their results
+│   ├── task1/Group12_MaleBin_task1_eda.ipynb
+│   ├── task2/Group12_MaleBin_task2_baselines.ipynb
+│   ├── task2/Group12_MaleBin_task2_proposed_model.ipynb
+│   ├── task3/Group12_MaleBin_task3_improvement_ablation.ipynb
+│   └── task3/Group12_MaleBin_task3_explainability.ipynb
 ├── report/
-│   ├── task1/Group00_MaleBin_task1_report.md   → export to .pdf
-│   ├── task2/Group00_MaleBin_task2_report.md   → export to .pdf
-│   └── task3/Group00_MaleBin_task3_report.md   → export to .pdf
+│   ├── REAL_RUN.md                               ← the run's budget, caveats and bug log
+│   ├── task1/Group12_MaleBin_task1_report.md     → export to .pdf
+│   ├── task2/Group12_MaleBin_task2_report.md     → export to .pdf
+│   └── task3/Group12_MaleBin_task3_report.md     → export to .pdf
+├── figures/                                      ← every figure, as a file
 ├── related_work/
-│   ├── Group00_MaleBin_related_work_table.md   → export to .pdf
+│   ├── Group00_MaleBin_related_work_table.md     → export to .pdf
 │   ├── Group00_MaleBin_related_work_table.csv
-│   └── papers/                                 ← put the 7 paper PDFs here
-├── models/                                     ← filled by Task 3a on Kaggle
-│   ├── Group00_MaleBin_best.pth
-│   └── Group00_MaleBin_label_map.json
-└── verification_run/                           ← proof every cell executes (see §6)
+│   └── papers/                                   ← put the 7 paper PDFs here
+└── models/
+    ├── README.md                                 how to regenerate the checkpoints
+    └── Group12_MaleBin_label_map.json
 ```
+
+Not tracked, by design: `artifacts/` (regenerable metrics and prediction arrays)
+and `*.pth` checkpoints (~111 MB, one file at 94.7 MB). `models/README.md` and
+each report say how to reproduce them.
 
 Each notebook writes `malebin_common.py` itself in its second cell, so **any
 notebook can be run on its own** — no cross-notebook imports and no fixed run
@@ -134,9 +141,9 @@ producing anything you will quote.
 ### Running locally instead
 
 ```bash
-pip install -r requirements.txt
+pip install -r code/requirements.txt
 export MALEBIN_DATA_ROOT=/path/to/malebin      # or let auto-discovery find ./data/malebin
-jupyter lab code/task1/Group00_MaleBin_task1_eda.ipynb
+jupyter lab code/task1/Group12_MaleBin_task1_eda.ipynb
 ```
 
 ## 5. Method summary
@@ -223,17 +230,6 @@ Two scopes, set by `CFG.eval_scope`:
   (2025, 94.04 % on a merged 61-class corpus), the closest published analogue to
   a merged multi-source label space. Different dataset, so we never claim a win
   from it.
-
-## 6. `verification_run/`
-
-Local end-to-end execution of all five notebooks against a **synthetic
-stand-in** dataset (39 folders, 256×256 grayscale byte-plot-like images with
-deliberate near-duplicate lineages), in `MALEBIN_FAST=1` mode.
-
-**Its purpose is to prove that every cell runs — its numbers are meaningless**
-and must not be quoted. They come from fake images and 2 training epochs. The
-real results come from running the `code/` notebooks on Kaggle against the real
-dataset. See `verification_run/README.md`.
 
 ## 7. Reproducibility
 
