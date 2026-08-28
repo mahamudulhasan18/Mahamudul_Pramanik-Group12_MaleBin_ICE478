@@ -17,6 +17,15 @@
 > absolute values are floored by training time and must not be compared with
 > published figures.** `REAL_RUN.md` documents the full budget and its reasoning.
 
+
+> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
+> file produced by re-running the notebooks; the folder is **not tracked in git**
+> (see `.gitignore`), because it holds regenerable intermediate data including
+> per-sample prediction arrays. Run the notebooks and the folder appears with
+> exactly these filenames. Figures under `figures/` **are** tracked, as are the
+> executed notebooks, so every number quoted in this report can be checked
+> without re-running anything.
+
 ---
 
 ## 1. Preprocessing and protocol

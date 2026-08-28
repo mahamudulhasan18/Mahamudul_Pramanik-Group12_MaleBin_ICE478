@@ -15,6 +15,15 @@
 > specification; `REAL_RUN.md` documents the budget and what it does and does not
 > license. Cross-validation was **not run** — see §4.
 
+
+> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
+> file produced by re-running the notebooks; the folder is **not tracked in git**
+> (see `.gitignore`), because it holds regenerable intermediate data including
+> per-sample prediction arrays. Run the notebooks and the folder appears with
+> exactly these filenames. Figures under `figures/` **are** tracked, as are the
+> executed notebooks, so every number quoted in this report can be checked
+> without re-running anything.
+
 ---
 
 ## 1. Summary

@@ -15,6 +15,15 @@
 > decoded at 128×128 (`EDA_SIDE = 128`); §4.4 records the one place where that
 > resolution choice matters.
 
+
+> **A note on `artifacts/`.** Every `artifacts/...` path referenced below is a
+> file produced by re-running the notebooks; the folder is **not tracked in git**
+> (see `.gitignore`), because it holds regenerable intermediate data including
+> per-sample prediction arrays. Run the notebooks and the folder appears with
+> exactly these filenames. Figures under `figures/` **are** tracked, as are the
+> executed notebooks, so every number quoted in this report can be checked
+> without re-running anything.
+
 ---
 
 ## 1. Dataset
